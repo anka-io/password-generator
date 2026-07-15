@@ -69,6 +69,7 @@ describe("App", () => {
     await user.click(screen.getByText("小写字母"));
     await user.click(screen.getByText("大写字母"));
     await user.click(screen.getByText("数字"));
+    await user.click(screen.getByText("符号"));
     expect(screen.getByRole("alert")).toHaveTextContent("请至少选择一种字符类型");
     expect(screen.getByRole("button", { name: "重新生成" })).toBeDisabled();
 

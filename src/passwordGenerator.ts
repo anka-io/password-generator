@@ -19,7 +19,7 @@ export const CHROME_DEFAULT_OPTIONS: Readonly<PasswordOptions> = Object.freeze({
   lowercase: true,
   uppercase: true,
   digits: true,
-  symbols: false,
+  symbols: true,
   excludeAmbiguous: true,
 });
 

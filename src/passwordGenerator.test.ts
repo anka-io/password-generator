@@ -37,17 +37,17 @@ describe("shuffleInPlace", () => {
 });
 
 describe("generatePassword", () => {
-  it("matches the Chromium default character and class rules", () => {
-    const allowed = new RegExp(`^[${Object.values(CHROME_SAFE_CHARACTER_SETS).slice(0, 3).join("")}]+$`);
+  it("matches the default character and class rules", () => {
+    const allowed = Object.values(CHROME_SAFE_CHARACTER_SETS).join("");
     for (let attempt = 0; attempt < 200; attempt += 1) {
       const password = generatePassword({ ...CHROME_DEFAULT_OPTIONS });
       expect(password).toHaveLength(15);
-      expect(password).toMatch(allowed);
+      expect([...password].every((character) => allowed.includes(character))).toBe(true);
       expect(password).toMatch(/[abcdefghijkmnpqrstuvwxyz]/);
       expect(password).toMatch(/[ABCDEFGHJKLMNPQRSTUVWXYZ]/);
       expect(password).toMatch(/[23456789]/);
+      expect(password).toMatch(/[-_.:!]/);
       expect(password).not.toMatch(/[lI1O0o]/);
-      expect(password).not.toMatch(/[-_.:!]/);
     }
   });
 
@@ -83,6 +83,7 @@ describe("generatePassword", () => {
       lowercase: false,
       uppercase: false,
       digits: false,
+      symbols: false,
     })).toThrow(RangeError);
   });
 
