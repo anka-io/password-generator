@@ -10,8 +10,6 @@ import {
 import "./App.css";
 
 const HISTORY_LIMIT = 10;
-const CHROMIUM_SOURCE =
-  "https://chromium.googlesource.com/chromium/src/+/HEAD/components/password_manager/core/browser/generation/password_generator.cc";
 
 function preferredLanguage(): Language {
   return navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
@@ -64,7 +62,15 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
-  }, [language]);
+    document.title = t.metaTitle;
+    let description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (!description) {
+      description = document.createElement("meta");
+      description.name = "description";
+      document.head.appendChild(description);
+    }
+    description.content = t.metaDescription;
+  }, [language, t.metaDescription, t.metaTitle]);
 
   const updateOption = <K extends keyof PasswordOptions>(key: K, value: PasswordOptions[K]) => {
     setOptions((current) => ({ ...current, [key]: value }));
@@ -97,7 +103,7 @@ export default function App() {
     <div className="app-shell">
       <header className="site-header">
         <a className="brand" href="#top" aria-label={t.brand}>
-          <span className="brand-mark" aria-hidden="true">••••</span>
+          <span className="brand-mark" aria-hidden="true">•••</span>
           <span>{t.brand}</span>
         </a>
         <button
@@ -112,13 +118,13 @@ export default function App() {
       </header>
 
       <main id="top">
-        <section className="hero" aria-labelledby="page-title">
-          <div className="eyebrow"><span className="status-dot" />{t.badge}</div>
-          <h1 id="page-title">{t.title}</h1>
-          <p>{t.subtitle}</p>
-        </section>
-
         <section className="generator-card" aria-labelledby="password-label">
+          <div className="card-intro">
+            <div className="eyebrow"><span className="status-dot" />{t.badge}</div>
+            <h1>{t.title}</h1>
+            <p>{t.subtitle}</p>
+          </div>
+
           <div className="card-heading">
             <div>
               <span id="password-label" className="field-label">{t.passwordLabel}</span>
@@ -129,16 +135,18 @@ export default function App() {
             <span className="length-chip">{password.length}</span>
           </div>
 
-          <output className="password-output" aria-live="polite" aria-labelledby="password-label">
-            {password}
-          </output>
+          <div className="password-surface">
+            <output className="password-output" aria-live="polite" aria-labelledby="password-label">
+              {password}
+            </output>
+          </div>
 
           <div className="primary-actions">
-            <button className="copy-button" type="button" onClick={() => void copyPassword(password)}>
+            <button className="copy-button primary" type="button" onClick={() => void copyPassword(password)}>
               {copyStatus === "success" ? t.copied : t.copy}
             </button>
             <button
-              className="generate-button"
+              className="generate-button secondary"
               type="button"
               onClick={regenerate}
               disabled={Boolean(validationError)}
@@ -262,21 +270,17 @@ export default function App() {
 
         <section className="trust-grid" aria-label={t.privacyTitle}>
           <article>
-            <span className="trust-icon" aria-hidden="true">✓</span>
-            <div><h2>{t.privacyTitle}</h2><p>{t.privacyText}</p></div>
+            <span className="trust-icon" aria-hidden="true">01</span>
+            <div><h2>{t.randomTitle}</h2><p>{t.randomText}</p></div>
           </article>
           <article>
-            <span className="trust-icon source" aria-hidden="true">{`{ }`}</span>
-            <div>
-              <h2>{t.sourceTitle}</h2>
-              <p>{t.sourceText}</p>
-              <a href={CHROMIUM_SOURCE} target="_blank" rel="noreferrer">{t.sourceLink} ↗</a>
-            </div>
+            <span className="trust-icon safe" aria-hidden="true">✓</span>
+            <div><h2>{t.privacyTitle}</h2><p>{t.privacyText}</p></div>
           </article>
         </section>
       </main>
 
-      <footer><p>{t.unofficial}</p></footer>
+      <footer><p>{t.brand} · {t.footer}</p></footer>
     </div>
   );
 }

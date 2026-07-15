@@ -39,8 +39,9 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole("button", { name: "English" }));
-    expect(screen.getByRole("heading", { name: "A stronger password, with less worry" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Create a secure password" })).toBeInTheDocument();
     expect(document.documentElement).toHaveAttribute("lang", "en");
+    expect(document.title).toBe("Password Generator");
     expect(localStorage).toHaveLength(0);
     expect(sessionStorage).toHaveLength(0);
   });
@@ -61,7 +62,7 @@ describe("App", () => {
     fetchSpy.mockRestore();
   });
 
-  it("validates advanced settings and restores Chrome defaults", async () => {
+  it("validates advanced settings and restores defaults", async () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole("button", { name: /高级设置/ }));
@@ -71,8 +72,19 @@ describe("App", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("请至少选择一种字符类型");
     expect(screen.getByRole("button", { name: "重新生成" })).toBeDisabled();
 
-    await user.click(screen.getByRole("button", { name: "恢复 Chrome 默认规则" }));
+    await user.click(screen.getByRole("button", { name: "恢复默认设置" }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getByText("Chrome 默认规则")).toBeInTheDocument();
+    expect(screen.getByText("默认规则")).toBeInTheDocument();
+  });
+
+  it("keeps product branding neutral in visible content and metadata", () => {
+    render(<App />);
+    expect(screen.getByRole("link", { name: "密码生成器" })).toBeInTheDocument();
+    expect(document.title).toBe("密码生成器");
+    expect(document.querySelector('meta[name="description"]')).toHaveAttribute(
+      "content",
+      expect.not.stringMatching(/chrome|google|chromium/i),
+    );
+    expect(document.body.textContent).not.toMatch(/chrome|google|chromium/i);
   });
 });
