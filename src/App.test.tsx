@@ -73,23 +73,18 @@ describe("App", () => {
   it("switches languages without persistence", async () => {
     const user = userEvent.setup();
     render(<App />);
-    const chineseButton = screen.getByRole("button", { name: "中文" });
-    const englishButton = screen.getByRole("button", { name: "EN" });
-    expect(chineseButton).toHaveAttribute("aria-pressed", "true");
-    expect(englishButton).toHaveAttribute("aria-pressed", "false");
+    const languageButton = screen.getByRole("button", { name: "切换语言" });
 
-    await user.click(englishButton);
+    await user.click(languageButton);
     expect(screen.getByRole("heading", { name: "Create a secure password" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Another one" })).toBeInTheDocument();
-    expect(chineseButton).toHaveAttribute("aria-pressed", "false");
-    expect(englishButton).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Switch language" })).toBeInTheDocument();
     expect(document.documentElement).toHaveAttribute("lang", "en");
     expect(document.title).toBe("Password Generator");
 
-    await user.click(chineseButton);
+    await user.click(screen.getByRole("button", { name: "Switch language" }));
     expect(screen.getByRole("heading", { name: "生成一个安全密码" })).toBeInTheDocument();
-    expect(chineseButton).toHaveAttribute("aria-pressed", "true");
-    expect(englishButton).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "切换语言" })).toBeInTheDocument();
     expect(document.documentElement).toHaveAttribute("lang", "zh-CN");
     expect(localStorage).toHaveLength(0);
     expect(sessionStorage).toHaveLength(0);

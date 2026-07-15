@@ -89,33 +89,32 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   stroke-linejoin: round;
 }
 
-.language-switch {
+.language-button {
+  width: 44px;
   height: 44px;
-  padding: 3px;
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: #f0f0ee;
-}
-
-.language-option {
-  min-width: 48px;
-  height: 36px;
-  padding: 0 10px;
+  padding: 0;
+  display: grid;
+  place-items: center;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  transition: color 180ms var(--ease), background-color 180ms var(--ease), transform 180ms var(--ease);
+  transition: color 180ms var(--ease), transform 180ms var(--ease);
 }
 
-.language-option:hover { color: var(--text); }
-.language-option.active { color: var(--accent-hover); background: var(--accent-soft); }
-.language-option:active { transform: scale(0.97); }
+.language-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.language-button:hover { color: var(--accent-hover); }
+.language-button:active { transform: scale(0.96); }
 
 main { width: min(720px, calc(100% - 32px)); margin: 24px auto 32px; }
 

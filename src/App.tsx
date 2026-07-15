@@ -61,6 +61,19 @@ function BrandIcon() {
   );
 }
 
+function LanguageIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m5 8 6 6" />
+      <path d="m4 14 6-6 2-3" />
+      <path d="M2 5h12" />
+      <path d="M7 2h1" />
+      <path d="m22 22-5-10-5 10" />
+      <path d="M14 18h6" />
+    </svg>
+  );
+}
+
 function CopyIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -171,24 +184,14 @@ export default function App() {
           <span className="brand-mark"><BrandIcon /></span>
           <span>{t.brand}</span>
         </a>
-        <div className="language-switch" role="group" aria-label={t.languageSwitch}>
-          <button
-            className={`language-option ${language === "zh" ? "active" : ""}`}
-            type="button"
-            aria-pressed={language === "zh"}
-            onClick={() => setLanguage("zh")}
-          >
-            中文
-          </button>
-          <button
-            className={`language-option ${language === "en" ? "active" : ""}`}
-            type="button"
-            aria-pressed={language === "en"}
-            onClick={() => setLanguage("en")}
-          >
-            EN
-          </button>
-        </div>
+        <button
+          className="language-button"
+          type="button"
+          aria-label={t.languageSwitch}
+          onClick={() => setLanguage((current) => current === "zh" ? "en" : "zh")}
+        >
+          <LanguageIcon />
+        </button>
       </header>
 
       <main id="top">
