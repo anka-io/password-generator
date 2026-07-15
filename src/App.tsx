@@ -11,11 +11,14 @@ import "./App.css";
 
 const HISTORY_LIMIT = 10;
 
+type CopyTarget = "main" | string;
+type CopyFeedback = { status: "idle" | "success" | "error"; target: CopyTarget };
+
 function preferredLanguage(): Language {
   return navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
 }
 
-function isChromeDefault(options: PasswordOptions): boolean {
+function isDefault(options: PasswordOptions): boolean {
   return Object.entries(CHROME_DEFAULT_OPTIONS).every(
     ([key, value]) => options[key as keyof PasswordOptions] === value,
   );
@@ -49,16 +52,60 @@ async function writeToClipboard(value: string): Promise<void> {
   if (!copied) throw new Error("Copy command failed");
 }
 
+function BrandIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3 5 6v5c0 4.6 2.9 8.2 7 10 4.1-1.8 7-5.4 7-10V6l-7-3Z" />
+      <path d="m9.2 12 1.8 1.8 3.9-4" />
+    </svg>
+  );
+}
+
+function CopyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="8" y="8" width="11" height="11" rx="2" />
+      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+    </svg>
+  );
+}
+
+function RefreshIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20 7v5h-5" />
+      <path d="M18.5 15a7 7 0 1 1-.5-7.5L20 10" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m5 12.5 4 4L19 7" />
+    </svg>
+  );
+}
+
 export default function App() {
   const [language, setLanguage] = useState<Language>(preferredLanguage);
   const [options, setOptions] = useState<PasswordOptions>({ ...CHROME_DEFAULT_OPTIONS });
+  const [lengthInput, setLengthInput] = useState(String(CHROME_DEFAULT_OPTIONS.length));
   const [password, setPassword] = useState(() => generatePassword({ ...CHROME_DEFAULT_OPTIONS }));
   const [history, setHistory] = useState<string[]>([]);
-  const [copyStatus, setCopyStatus] = useState<"idle" | "success" | "error">("idle");
+  const [copyFeedback, setCopyFeedback] = useState<CopyFeedback>({ status: "idle", target: "main" });
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const t = translations[language];
   const validationError = useMemo(() => validationKey(options), [options]);
-  const chromeDefault = isChromeDefault(options);
+  const defaultOptions = isDefault(options);
+
+  const classSummary = [
+    options.lowercase && t.lowercaseShort,
+    options.uppercase && t.uppercaseShort,
+    options.digits && t.digitsShort,
+    options.symbols && t.symbolsShort,
+  ].filter(Boolean).join(" · ");
+  const settingsSummary = `${lengthInput || "—"}${t.lengthUnit}${classSummary ? ` · ${classSummary}` : ""}`;
 
   useEffect(() => {
     document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
@@ -72,38 +119,57 @@ export default function App() {
     description.content = t.metaDescription;
   }, [language, t.metaDescription, t.metaTitle]);
 
+  useEffect(() => {
+    if (copyFeedback.status !== "success") return undefined;
+    const timeout = window.setTimeout(
+      () => setCopyFeedback({ status: "idle", target: "main" }),
+      1500,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [copyFeedback]);
+
+  const applyOptions = (nextOptions: PasswordOptions) => {
+    setOptions(nextOptions);
+    setCopyFeedback({ status: "idle", target: "main" });
+    if (!validationKey(nextOptions)) setPassword(generatePassword(nextOptions));
+  };
+
   const updateOption = <K extends keyof PasswordOptions>(key: K, value: PasswordOptions[K]) => {
-    setOptions((current) => ({ ...current, [key]: value }));
-    setCopyStatus("idle");
+    applyOptions({ ...options, [key]: value });
+  };
+
+  const updateLength = (value: string) => {
+    setLengthInput(value);
+    applyOptions({ ...options, length: value.trim() === "" ? 0 : Number(value) });
   };
 
   const regenerate = () => {
     if (validationError) return;
-    const nextPassword = generatePassword(options);
     setHistory((current) => [password, ...current].slice(0, HISTORY_LIMIT));
-    setPassword(nextPassword);
-    setCopyStatus("idle");
+    setPassword(generatePassword(options));
+    setCopyFeedback({ status: "idle", target: "main" });
   };
 
-  const copyPassword = async (value: string) => {
+  const copyPassword = async (value: string, target: CopyTarget) => {
     try {
       await writeToClipboard(value);
-      setCopyStatus("success");
+      setCopyFeedback({ status: "success", target });
     } catch {
-      setCopyStatus("error");
+      setCopyFeedback({ status: "error", target });
     }
   };
 
   const resetOptions = () => {
-    setOptions({ ...CHROME_DEFAULT_OPTIONS });
-    setCopyStatus("idle");
+    const defaults = { ...CHROME_DEFAULT_OPTIONS };
+    setLengthInput(String(defaults.length));
+    applyOptions(defaults);
   };
 
   return (
     <div className="app-shell">
       <header className="site-header">
         <a className="brand" href="#top" aria-label={t.brand}>
-          <span className="brand-mark" aria-hidden="true">•••</span>
+          <span className="brand-mark"><BrandIcon /></span>
           <span>{t.brand}</span>
         </a>
         <button
@@ -118,18 +184,18 @@ export default function App() {
       </header>
 
       <main id="top">
-        <section className="generator-card" aria-labelledby="password-label">
+        <section className="generator-card" aria-labelledby="page-title">
           <div className="card-intro">
             <div className="eyebrow"><span className="status-dot" />{t.badge}</div>
-            <h1>{t.title}</h1>
+            <h1 id="page-title">{t.title}</h1>
             <p>{t.subtitle}</p>
           </div>
 
-          <div className="card-heading">
+          <div className="result-heading">
             <div>
               <span id="password-label" className="field-label">{t.passwordLabel}</span>
-              <span className={`rule-pill ${chromeDefault ? "default" : "custom"}`}>
-                {chromeDefault ? t.currentRule : t.customRule}
+              <span className={`rule-pill ${defaultOptions ? "default" : "custom"}`}>
+                {defaultOptions ? t.currentRule : t.customRule}
               </span>
             </div>
             <span className="length-chip">{password.length}</span>
@@ -142,8 +208,14 @@ export default function App() {
           </div>
 
           <div className="primary-actions">
-            <button className="copy-button primary" type="button" onClick={() => void copyPassword(password)}>
-              {copyStatus === "success" ? t.copied : t.copy}
+            <button
+              className={`copy-button primary ${copyFeedback.status === "success" && copyFeedback.target === "main" ? "success" : ""}`}
+              type="button"
+              onClick={() => void copyPassword(password, "main")}
+              disabled={Boolean(validationError)}
+            >
+              {copyFeedback.status === "success" && copyFeedback.target === "main" ? <CheckIcon /> : <CopyIcon />}
+              {copyFeedback.status === "success" && copyFeedback.target === "main" ? t.copied : t.copy}
             </button>
             <button
               className="generate-button secondary"
@@ -151,26 +223,24 @@ export default function App() {
               onClick={regenerate}
               disabled={Boolean(validationError)}
             >
-              <span aria-hidden="true">↻</span>
+              <RefreshIcon />
               {t.regenerate}
             </button>
           </div>
-          <p className={`copy-feedback ${copyStatus}`} role="status" aria-live="polite">
-            {copyStatus === "error" ? t.copyFailed : copyStatus === "success" ? t.copied : ""}
+          <p className="sr-only" role="status" aria-live="polite">
+            {copyFeedback.status === "error" ? t.copyFailed : copyFeedback.status === "success" ? t.copied : ""}
           </p>
 
-          <div className="divider" />
-
+          <div className="settings-divider" />
           <button
             className="advanced-toggle"
             type="button"
             aria-expanded={advancedOpen}
             aria-controls="advanced-panel"
-            aria-label={t.advanced}
             onClick={() => setAdvancedOpen((current) => !current)}
           >
-            <span>{t.advanced}</span>
-            <span className="advanced-hint">{t.advancedHint}</span>
+            <span className="advanced-title">{t.advanced}</span>
+            <span className="advanced-summary">{settingsSummary}</span>
             <span className={`chevron ${advancedOpen ? "open" : ""}`} aria-hidden="true">⌄</span>
           </button>
 
@@ -185,9 +255,9 @@ export default function App() {
                     type="number"
                     min={MIN_PASSWORD_LENGTH}
                     max={MAX_PASSWORD_LENGTH}
-                    value={options.length}
+                    value={lengthInput}
                     aria-label={t.length}
-                    onChange={(event) => updateOption("length", Number(event.target.value))}
+                    onChange={(event) => updateLength(event.target.value)}
                   />
                 </div>
                 <input
@@ -197,27 +267,31 @@ export default function App() {
                   min={MIN_PASSWORD_LENGTH}
                   max={MAX_PASSWORD_LENGTH}
                   value={Math.min(MAX_PASSWORD_LENGTH, Math.max(MIN_PASSWORD_LENGTH, options.length || MIN_PASSWORD_LENGTH))}
-                  onChange={(event) => updateOption("length", Number(event.target.value))}
+                  aria-label={t.lengthSlider}
+                  onChange={(event) => updateLength(event.target.value)}
                 />
                 <div className="range-limits"><span>{MIN_PASSWORD_LENGTH}</span><span>{MAX_PASSWORD_LENGTH}</span></div>
               </div>
 
-              <div className="character-grid">
-                {(["lowercase", "uppercase", "digits", "symbols"] as const).map((key) => (
-                  <label className="check-card" key={key}>
-                    <input
-                      type="checkbox"
-                      checked={options[key]}
-                      onChange={(event) => updateOption(key, event.target.checked)}
-                    />
-                    <span className="custom-check" aria-hidden="true">✓</span>
-                    <span>
-                      <strong>{t[key]}</strong>
-                      {key === "symbols" && <small>{t.symbolsHint}</small>}
-                    </span>
-                  </label>
-                ))}
-              </div>
+              <fieldset className="character-fieldset">
+                <legend>{t.characterTypes}</legend>
+                <div className="character-grid">
+                  {(["lowercase", "uppercase", "digits", "symbols"] as const).map((key) => (
+                    <label className="check-card" key={key}>
+                      <input
+                        type="checkbox"
+                        checked={options[key]}
+                        onChange={(event) => updateOption(key, event.target.checked)}
+                      />
+                      <span className="custom-check" aria-hidden="true">✓</span>
+                      <span>
+                        <strong>{t[key]}</strong>
+                        {key === "symbols" && <small>{t.symbolsHint}</small>}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
 
               <label className="switch-row">
                 <span>
@@ -235,52 +309,48 @@ export default function App() {
 
               {validationError && <p className="validation-error" role="alert">{t[validationError]}</p>}
 
-              <button className="reset-button" type="button" onClick={resetOptions}>
-                {t.reset}
-              </button>
+              <div className="settings-footer">
+                <span>{t.instantHint}</span>
+                <button className="reset-button" type="button" onClick={resetOptions}>{t.reset}</button>
+              </div>
             </div>
           )}
         </section>
 
-        <section className="history-section" aria-labelledby="history-title">
-          <div className="section-heading">
-            <div>
-              <h2 id="history-title">{t.history}</h2>
-              <p>{t.historyHint}</p>
-            </div>
-            {history.length > 0 && (
+        <aside className="trust-strip" aria-label={t.trustLabel}>
+          <BrandIcon />
+          <p>{t.trustText}</p>
+        </aside>
+
+        {history.length > 0 && (
+          <section className="history-section" aria-labelledby="history-title">
+            <div className="section-heading">
+              <div>
+                <h2 id="history-title">{t.history}</h2>
+                <p>{t.historyHint}</p>
+              </div>
               <button className="clear-button" type="button" onClick={() => setHistory([])}>{t.clear}</button>
-            )}
-          </div>
-          {history.length === 0 ? (
-            <p className="empty-history">{t.emptyHistory}</p>
-          ) : (
+            </div>
             <ol className="history-list">
-              {history.map((entry, index) => (
-                <li key={`${entry}-${index}`}>
-                  <code>{entry}</code>
-                  <button type="button" onClick={() => void copyPassword(entry)} aria-label={t.copyHistory}>
-                    {t.copy}
-                  </button>
-                </li>
-              ))}
+              {history.map((entry, index) => {
+                const target = `history-${index}`;
+                const copied = copyFeedback.status === "success" && copyFeedback.target === target;
+                return (
+                  <li key={`${entry}-${index}`}>
+                    <code>{entry}</code>
+                    <button type="button" onClick={() => void copyPassword(entry, target)} aria-label={t.copyHistory}>
+                      {copied ? <CheckIcon /> : <CopyIcon />}
+                      <span>{copied ? t.copied : t.copyShort}</span>
+                    </button>
+                  </li>
+                );
+              })}
             </ol>
-          )}
-        </section>
-
-        <section className="trust-grid" aria-label={t.privacyTitle}>
-          <article>
-            <span className="trust-icon" aria-hidden="true">01</span>
-            <div><h2>{t.randomTitle}</h2><p>{t.randomText}</p></div>
-          </article>
-          <article>
-            <span className="trust-icon safe" aria-hidden="true">✓</span>
-            <div><h2>{t.privacyTitle}</h2><p>{t.privacyText}</p></div>
-          </article>
-        </section>
+          </section>
+        )}
       </main>
 
-      <footer><p>{t.brand} · {t.footer}</p></footer>
+      <footer><p>{t.footer}</p></footer>
     </div>
   );
 }
