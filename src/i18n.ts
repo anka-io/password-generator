@@ -2,7 +2,7 @@ export type Language = "zh" | "en";
 
 export const translations = {
   zh: {
-    languageName: "English",
+    languageSwitch: "切换语言",
     brand: "密码生成器",
     badge: "安全 · 本地生成",
     title: "生成一个安全密码",
@@ -47,7 +47,7 @@ export const translations = {
     customRule: "自定义规则",
   },
   en: {
-    languageName: "中文",
+    languageSwitch: "Switch language",
     brand: "Password Generator",
     badge: "Secure · Generated locally",
     title: "Create a secure password",

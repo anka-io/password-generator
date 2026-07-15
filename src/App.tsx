@@ -105,7 +105,6 @@ export default function App() {
     options.digits && t.digitsShort,
     options.symbols && t.symbolsShort,
   ].filter(Boolean).join(" · ");
-  const settingsSummary = `${lengthInput || "—"}${t.lengthUnit}${classSummary ? ` · ${classSummary}` : ""}`;
 
   useEffect(() => {
     document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
@@ -172,15 +171,24 @@ export default function App() {
           <span className="brand-mark"><BrandIcon /></span>
           <span>{t.brand}</span>
         </a>
-        <button
-          className="language-button"
-          type="button"
-          onClick={() => setLanguage((current) => (current === "zh" ? "en" : "zh"))}
-          aria-label={t.languageName}
-        >
-          <span aria-hidden="true">文</span>
-          {t.languageName}
-        </button>
+        <div className="language-switch" role="group" aria-label={t.languageSwitch}>
+          <button
+            className={`language-option ${language === "zh" ? "active" : ""}`}
+            type="button"
+            aria-pressed={language === "zh"}
+            onClick={() => setLanguage("zh")}
+          >
+            中文
+          </button>
+          <button
+            className={`language-option ${language === "en" ? "active" : ""}`}
+            type="button"
+            aria-pressed={language === "en"}
+            onClick={() => setLanguage("en")}
+          >
+            EN
+          </button>
+        </div>
       </header>
 
       <main id="top">
@@ -205,6 +213,36 @@ export default function App() {
             <output className="password-output" aria-live="polite" aria-labelledby="password-label">
               {password}
             </output>
+          </div>
+
+          <div className="length-control primary-length-control">
+            <div className="setting-label-row">
+              <label htmlFor="password-length">{t.length}</label>
+              <input
+                id="password-length-number"
+                className="number-input"
+                type="number"
+                min={MIN_PASSWORD_LENGTH}
+                max={MAX_PASSWORD_LENGTH}
+                value={lengthInput}
+                aria-label={t.length}
+                onChange={(event) => updateLength(event.target.value)}
+              />
+            </div>
+            <input
+              id="password-length"
+              className="range-input"
+              type="range"
+              min={MIN_PASSWORD_LENGTH}
+              max={MAX_PASSWORD_LENGTH}
+              value={Math.min(MAX_PASSWORD_LENGTH, Math.max(MIN_PASSWORD_LENGTH, options.length || MIN_PASSWORD_LENGTH))}
+              aria-label={t.lengthSlider}
+              onChange={(event) => updateLength(event.target.value)}
+            />
+            <div className="range-limits"><span>{MIN_PASSWORD_LENGTH}</span><span>{MAX_PASSWORD_LENGTH}</span></div>
+            {validationError && validationError !== "invalidNoClass" && (
+              <p className="validation-error" role="alert">{t[validationError]}</p>
+            )}
           </div>
 
           <div className="primary-actions">
@@ -240,39 +278,12 @@ export default function App() {
             onClick={() => setAdvancedOpen((current) => !current)}
           >
             <span className="advanced-title">{t.advanced}</span>
-            <span className="advanced-summary">{settingsSummary}</span>
+            <span className="advanced-summary">{classSummary}</span>
             <span className={`chevron ${advancedOpen ? "open" : ""}`} aria-hidden="true">⌄</span>
           </button>
 
           {advancedOpen && (
             <div className="advanced-panel" id="advanced-panel">
-              <div className="length-control">
-                <div className="setting-label-row">
-                  <label htmlFor="password-length">{t.length}</label>
-                  <input
-                    id="password-length-number"
-                    className="number-input"
-                    type="number"
-                    min={MIN_PASSWORD_LENGTH}
-                    max={MAX_PASSWORD_LENGTH}
-                    value={lengthInput}
-                    aria-label={t.length}
-                    onChange={(event) => updateLength(event.target.value)}
-                  />
-                </div>
-                <input
-                  id="password-length"
-                  className="range-input"
-                  type="range"
-                  min={MIN_PASSWORD_LENGTH}
-                  max={MAX_PASSWORD_LENGTH}
-                  value={Math.min(MAX_PASSWORD_LENGTH, Math.max(MIN_PASSWORD_LENGTH, options.length || MIN_PASSWORD_LENGTH))}
-                  aria-label={t.lengthSlider}
-                  onChange={(event) => updateLength(event.target.value)}
-                />
-                <div className="range-limits"><span>{MIN_PASSWORD_LENGTH}</span><span>{MAX_PASSWORD_LENGTH}</span></div>
-              </div>
-
               <fieldset className="character-fieldset">
                 <legend>{t.characterTypes}</legend>
                 <div className="character-grid">
@@ -307,7 +318,7 @@ export default function App() {
                 <span className="switch-track" aria-hidden="true" />
               </label>
 
-              {validationError && <p className="validation-error" role="alert">{t[validationError]}</p>}
+              {validationError === "invalidNoClass" && <p className="validation-error" role="alert">{t[validationError]}</p>}
 
               <div className="settings-footer">
                 <span>{t.instantHint}</span>

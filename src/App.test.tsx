@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -45,8 +45,9 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
     expect(screen.queryByRole("region", { name: "最近生成" })).not.toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "密码长度" })).toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "字符类型" })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /高级设置/ }));
     const lengthInput = screen.getByRole("spinbutton", { name: "密码长度" });
     await user.clear(lengthInput);
     expect(screen.getByRole("alert")).toHaveTextContent("密码长度必须在 4 到 200 之间");
@@ -72,11 +73,24 @@ describe("App", () => {
   it("switches languages without persistence", async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole("button", { name: "English" }));
+    const chineseButton = screen.getByRole("button", { name: "中文" });
+    const englishButton = screen.getByRole("button", { name: "EN" });
+    expect(chineseButton).toHaveAttribute("aria-pressed", "true");
+    expect(englishButton).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(englishButton);
     expect(screen.getByRole("heading", { name: "Create a secure password" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Another one" })).toBeInTheDocument();
+    expect(chineseButton).toHaveAttribute("aria-pressed", "false");
+    expect(englishButton).toHaveAttribute("aria-pressed", "true");
     expect(document.documentElement).toHaveAttribute("lang", "en");
     expect(document.title).toBe("Password Generator");
+
+    await user.click(chineseButton);
+    expect(screen.getByRole("heading", { name: "生成一个安全密码" })).toBeInTheDocument();
+    expect(chineseButton).toHaveAttribute("aria-pressed", "true");
+    expect(englishButton).toHaveAttribute("aria-pressed", "false");
+    expect(document.documentElement).toHaveAttribute("lang", "zh-CN");
     expect(localStorage).toHaveLength(0);
     expect(sessionStorage).toHaveLength(0);
   });
@@ -101,10 +115,11 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole("button", { name: /高级设置/ }));
-    await user.click(screen.getByText("小写字母"));
-    await user.click(screen.getByText("大写字母"));
-    await user.click(screen.getByText("数字"));
-    await user.click(screen.getByText("符号"));
+    const characterTypes = within(screen.getByRole("group", { name: "字符类型" }));
+    await user.click(characterTypes.getByText("小写字母"));
+    await user.click(characterTypes.getByText("大写字母"));
+    await user.click(characterTypes.getByText("数字"));
+    await user.click(characterTypes.getByText("符号"));
     expect(screen.getByRole("alert")).toHaveTextContent("请至少选择一种字符类型");
     expect(screen.getByRole("button", { name: "复制密码" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "换一个" })).toBeDisabled();
